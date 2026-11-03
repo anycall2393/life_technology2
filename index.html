@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<base target="_blank">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>적정 기술 질문 챗봇</title>
+<style>
+  :root{
+    --bg:#f3f7f2; --card:#ffffff; --ink:#1f2d24; --sub:#5c6f62; --line:#dfe8df;
+    --main:#2f7d4f; --main2:#e3f2e8; --accent:#f2a33a; --user:#2f7d4f; --bot:#ffffff;
+    --ok:#1e8e3e; --no:#d93025; --radius:14px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;font-size:15px;line-height:1.6}
+  .wrap{max-width:860px;margin:0 auto;padding:12px 16px calc(var(--barH, 120px) + 24px)}
+  header{display:flex;align-items:center;gap:12px;padding:6px 0 10px}
+  header .logo{font-size:34px}
+  header h1{margin:0;font-size:20px;letter-spacing:-.3px}
+  header h1 small{font-size:12px;color:var(--sub);font-weight:500}
+  header p{margin:0;color:var(--sub);font-size:13px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px}
+  /* 학생 정보 */
+  .stu{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .stu label{font-size:13px;color:var(--sub)}
+  .stu select,.stu input{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:#fbfdfb}
+  .stu input.n{width:64px} .stu input.name{width:110px}
+  .btn{font:inherit;border:0;border-radius:10px;padding:7px 14px;background:var(--main);color:#fff;cursor:pointer;font-weight:600}
+  .btn:disabled{opacity:.5;cursor:default}
+  .btn.ghost{background:var(--main2);color:var(--main)}
+  .btn.small{padding:4px 10px;font-size:13px;white-space:nowrap}
+  .stu-done{display:flex;align-items:center;gap:10px;justify-content:space-between}
+  .stu-done b{color:var(--main)}
+  .warn{outline:2px solid var(--accent)}
+  /* 탭 */
+  .tabs{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:thin}
+  .tab{flex:0 0 auto;border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font:inherit;font-size:14px;cursor:pointer;color:var(--ink)}
+  .tab.on{background:var(--main);color:#fff;border-color:var(--main);font-weight:600}
+  .tab.quiz{border-color:var(--accent)} .tab.quiz.on{background:var(--accent);border-color:var(--accent)}
+  .custom{display:none;gap:8px;align-items:center;margin-bottom:8px}
+  .custom input{flex:1;font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:10px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+  .chip{border:1px dashed #b9d3c1;background:#f8fcf9;color:var(--main);border-radius:999px;padding:4px 10px;font:inherit;font-size:13px;cursor:pointer}
+  /* 채팅 */
+  #chat{display:flex;flex-direction:column;gap:10px}
+  .msg{max-width:92%;border-radius:var(--radius);padding:10px 13px;word-break:keep-all;overflow-wrap:anywhere}
+  .msg.user{align-self:flex-end;background:var(--user);color:#fff;border-bottom-right-radius:4px}
+  .msg.bot{align-self:flex-start;background:var(--bot);border:1px solid var(--line);border-bottom-left-radius:4px;width:92%}
+  .msg.bot ul,.msg.bot ol{margin:4px 0;padding-left:22px}
+  .msg.bot li{margin:2px 0}
+  .think{color:var(--sub)}
+  .dots span{display:inline-block;width:7px;height:7px;margin:0 2px;border-radius:50%;background:#9bb8a5;animation:b 1s infinite}
+  .dots span:nth-child(2){animation-delay:.15s}.dots span:nth-child(3){animation-delay:.3s}
+  @keyframes b{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-5px);opacity:1}}
+  .src{margin-top:8px;border-top:1px solid var(--line);padding-top:6px;font-size:13px}
+  .src a{display:block;color:#1a5fb4;text-decoration:none;padding:2px 0}
+  .src a:hover{text-decoration:underline}
+  .src .t{display:inline-block;font-size:11px;padding:0 6px;border-radius:6px;background:var(--main2);color:var(--main);margin-right:5px}
+  .tools{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center}
+  .tools .tb{border:1px solid var(--line);background:#fff;border-radius:8px;padding:3px 9px;font:inherit;font-size:13px;cursor:pointer}
+  .tools .time{margin-left:auto;font-size:12px;color:var(--sub)}
+  .portal{display:none;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .portal a{font-size:13px;text-decoration:none;border-radius:8px;padding:4px 10px;color:#fff}
+  .p-naver{background:#03c75a}.p-daum{background:#3b6ef5}.p-google{background:#5f6368}.p-img{background:#0a9e52}.p-yt{background:#e62117}
+  .media{margin-top:8px}
+  .vbox{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#000;margin:0 auto;
+    width:min(100%, 680px, max(300px, calc((100vh - var(--barH, 120px) - 190px) * 1.7778)))}
+  .vbox + .more{display:block;text-align:center}
+  .player{position:relative;padding-top:56.25%}
+  .player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  .vinfo{background:#fff;padding:6px 10px;font-size:13px;display:flex;gap:8px;justify-content:space-between;align-items:center}
+  .vinfo a{color:#e62117;text-decoration:none;white-space:nowrap}
+  .thumbs{display:flex;gap:6px;overflow-x:auto;background:#fff;padding:6px 8px 8px}
+  .thumbs button{flex:0 0 120px;border:2px solid transparent;border-radius:8px;padding:0;background:#fff;cursor:pointer;text-align:left;font:inherit;font-size:11px;line-height:1.3}
+  .thumbs button.on{border-color:var(--accent)}
+  .thumbs img{width:100%;border-radius:6px 6px 0 0;display:block}
+  .thumbs span{display:block;padding:2px 4px;max-height:2.6em;overflow:hidden}
+  .more{display:inline-block;margin-top:6px;font-size:13px;color:#e62117;text-decoration:none}
+  .photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+  .photo{border:1px solid var(--line);border-radius:10px;overflow:hidden;text-decoration:none;color:var(--ink);background:#fff}
+  .photo img{width:100%;height:110px;object-fit:cover;display:block;background:#eef3ee}
+  .photo div{padding:4px 6px;font-size:11px;line-height:1.35}
+  .photo small{color:var(--sub)}
+  .note{font-size:13px;color:var(--sub)}
+  .err{color:var(--no)}
+  /* 입력 */
+  .bar{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(transparent,var(--bg) 30%);padding:14px 16px 14px}
+  .bar .in{max-width:828px;margin:0 auto;display:flex;gap:8px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:6px;box-shadow:0 4px 18px rgba(0,0,0,.06)}
+  .bar textarea{flex:1;border:0;resize:none;font:inherit;padding:8px;outline:none;max-height:120px;background:transparent}
+  .hint{max-width:828px;margin:3px auto 0;font-size:10.5px;line-height:1.4;color:var(--sub);text-align:center}
+  /* 예상 문제 */
+  #quizView{display:none}
+  .qtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+  .qtab{border:1px solid var(--line);background:#fff;border-radius:10px;padding:6px 12px;font:inherit;font-size:14px;cursor:pointer}
+  .qtab.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  .q{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px}
+  .q .qt{font-weight:600;margin-bottom:8px}
+  .q .qt .no{display:inline-block;min-width:26px;height:26px;line-height:26px;text-align:center;border-radius:50%;background:var(--main2);color:var(--main);font-size:13px;margin-right:6px}
+  .q .box{background:#f6faf7;border-left:4px solid #b9d3c1;padding:6px 10px;margin:0 0 8px;border-radius:6px;font-size:14px}
+  .ox{display:flex;gap:10px}
+  .ox button{width:64px;height:48px;font-size:22px;border:2px solid var(--line);border-radius:12px;background:#fff;cursor:pointer}
+  .ox button.sel{border-color:var(--main);background:var(--main2)}
+  .opts{display:grid;gap:6px}
+  .opts label{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:7px 10px;cursor:pointer}
+  .opts label.sel{border-color:var(--main);background:var(--main2)}
+  .opts input{margin-top:5px}
+  .q input.sa{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:10px;width:100%;max-width:320px}
+  .q textarea.wr{font:inherit;width:100%;min-height:96px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;resize:vertical}
+  .exp{display:none;margin-top:8px;padding:8px 10px;border-radius:8px;font-size:14px}
+  .exp.ok{display:block;background:#e6f4ea;color:#14532d}
+  .exp.no{display:block;background:#fdecea;color:#7a1c14}
+  .exp.fb{display:block;background:#fff7e6;color:#5b3b00;white-space:pre-wrap}
+  .score{font-size:18px;font-weight:700;text-align:center;padding:12px;border-radius:12px;background:#fff;border:2px solid var(--accent);margin:10px 0;display:none}
+  .qact{display:flex;gap:8px;justify-content:center;margin:12px 0}
+  /* 시작 화면 */
+  #start{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto;
+    background:linear-gradient(180deg,#8fd3f4 0%,#c9ecd9 55%,#5aa469 56%,#2f7d4f 100%);transition:opacity .45s}
+  #start.out{opacity:0;pointer-events:none}
+  #start .bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity 1.6s ease;transform:scale(1.04)}
+  #start .bg.on{opacity:1;animation:kb 16s ease-in-out infinite alternate}
+  @keyframes kb{from{transform:scale(1.04) translate(0,0)}to{transform:scale(1.14) translate(-1.5%,-1%)}}
+  #start .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,30,18,.25),rgba(10,30,18,.55) 60%,rgba(10,30,18,.75))}
+  .hero{position:relative;width:100%;max-width:520px;text-align:center;color:#fff}
+  .hero .badge{display:inline-block;font-size:12px;padding:3px 12px;border-radius:999px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.45);backdrop-filter:blur(4px)}
+  .hero h1{font-size:clamp(26px,7vw,38px);margin:10px 0 4px;letter-spacing:-.5px;text-shadow:0 2px 12px rgba(0,0,0,.45)}
+  .hero h1 small{font-size:13px;font-weight:500;opacity:.85}
+  .hero .lead{margin:0 0 16px;font-size:15px;text-shadow:0 1px 8px rgba(0,0,0,.5)}
+  .startcard{background:rgba(255,255,255,.93);color:var(--ink);border-radius:18px;padding:16px;box-shadow:0 10px 40px rgba(0,0,0,.25);text-align:left}
+  .startcard h2{margin:0 0 10px;font-size:15px}
+  .startcard .stu{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .startcard .stu label{display:flex;flex-direction:column;gap:3px}
+  .startcard .stu label.full{grid-column:1/-1}
+  .startcard .stu select,.startcard .stu input{width:100%;padding:9px 10px;font-size:16px}
+  .startcard .go{grid-column:1/-1;padding:11px;font-size:16px;margin-top:4px}
+  .keys{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:14px}
+  .keys span{font-size:12px;padding:3px 10px;border-radius:999px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.3)}
+  .credit{position:absolute;right:10px;bottom:8px;left:10px;text-align:right;font-size:10px;color:rgba(255,255,255,.8)}
+  .credit a{color:inherit}
+  /* 두 번째 화면 배경 (생명 기술 사진 + 유리 느낌) */
+  #appbg{position:fixed;inset:0;z-index:0;overflow:hidden;
+    background:radial-gradient(1200px 600px at 85% -10%,#bfe6d0 0%,transparent 60%),radial-gradient(900px 500px at -10% 110%,#cfe9f3 0%,transparent 60%),#eef6f0}
+  #appbg .ph{position:absolute;inset:-24px;background-size:cover;background-position:center;opacity:0;transition:opacity 1.4s ease;filter:saturate(1.08) blur(1.5px)}
+  #appbg .ph.on{opacity:1;animation:drift 40s ease-in-out infinite alternate}
+  @keyframes drift{from{transform:scale(1.02)}to{transform:scale(1.08) translate(-1%,-1%)}}
+  #appbg::after{content:"";position:absolute;inset:0;
+    background:linear-gradient(180deg,rgba(236,246,240,.42) 0%,rgba(240,247,242,.74) 30%,rgba(243,248,244,.86) 70%,rgba(243,248,244,.92) 100%)}
+  .wrap{position:relative;z-index:1}
+  header{background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.7);border-radius:18px;padding:10px 14px;margin-bottom:10px;
+    backdrop-filter:blur(12px) saturate(1.2);-webkit-backdrop-filter:blur(12px) saturate(1.2);box-shadow:0 6px 24px rgba(20,60,35,.08)}
+  .card{background:rgba(255,255,255,.78);border-color:rgba(255,255,255,.8);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 4px 18px rgba(20,60,35,.06)}
+  .tab{background:rgba(255,255,255,.72);border-color:rgba(255,255,255,.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+  .chip{background:rgba(248,252,249,.78);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  .msg.bot{background:rgba(255,255,255,.93);border-color:rgba(255,255,255,.9);box-shadow:0 6px 22px rgba(20,60,35,.08)}
+  .msg.user{box-shadow:0 6px 18px rgba(47,125,79,.25)}
+  .q{background:rgba(255,255,255,.9);border-color:rgba(255,255,255,.9);box-shadow:0 4px 16px rgba(20,60,35,.06)}
+  .qtab{background:rgba(255,255,255,.75)}
+  .score{background:rgba(255,255,255,.95)}
+  .bar{z-index:2;background:linear-gradient(rgba(243,248,244,0),rgba(243,248,244,.92) 35%)}
+  .bar .in{background:rgba(255,255,255,.95)}
+  #credit2 a{color:inherit}
+  .qarea{margin:22px 0 4px;padding:8px 12px;border-radius:12px;background:var(--main);color:#fff;font-weight:700;font-size:16px}
+  .areas{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:8px;font-size:13px;font-weight:500}
+  .areas span{background:var(--main2);border-radius:8px;padding:2px 8px}
+  .qsec{font-weight:700;color:var(--main);margin:14px 2px 6px;font-size:15px}
+  .opts label.right{border-color:var(--ok);background:#e6f4ea}
+  .chip.go-quiz{border:1px solid var(--accent);background:rgba(255,247,230,.9);color:#9a5b00;font-weight:600}
+  .lv{display:inline-block;font-weight:700;padding:0 8px;border-radius:6px;background:var(--accent);color:#fff;margin-right:6px}
+</style>
+</head>
+<body>
+<!-- 시작 화면 (배경 사진) -->
+<div id="start">
+  <div class="bg" id="bg1"></div><div class="bg" id="bg2"></div>
+  <div class="shade"></div>
+  <div class="hero">
+    <div class="badge">Ⅵ-02 · 교과서 240~249쪽</div>
+    <h1>🌍 적정 기술 질문 챗봇 <small id="ver0">v1.5</small></h1>
+    <p class="lead">착한 기술, 적정 기술과 지속 가능한 발전<br>궁금한 것을 묻고, 영상·사진·자료도 찾아봐요</p>
+    <div class="startcard">
+      <h2>👋 나를 알려 주세요</h2>
+      <div class="stu" id="stuForm">
+        <label>학년 <select id="grade"><option>1</option><option>2</option><option selected>3</option></select></label>
+        <label>반 <input id="cls" type="number" min="1" max="20" inputmode="numeric"></label>
+        <label>번호 <input id="num" type="number" min="1" max="50" inputmode="numeric"></label>
+        <label class="full">이름 <input id="name" type="text" maxlength="20" autocomplete="off"></label>
+        <button class="btn go" id="stuOk">시작하기 🚀</button>
+      </div>
+    </div>
+    <div class="keys"><span>🛠️ 적정 기술</span><span>♻️ 지속 가능한 발전</span><span>🙋 SDGs 실천</span><span>☀️ 태양열 조리기</span><span>📝 예상 문제</span></div>
+  </div>
+  <div class="credit" id="credit"></div>
+</div>
+
+<!-- 두 번째 화면 배경 -->
+<div id="appbg"><div class="ph" id="ph"></div></div>
+
+<div class="wrap">
+  <header>
+    <div class="logo">🌍</div>
+    <div>
+      <h1>적정 기술 질문 챗봇 <small id="ver">· v1.5</small></h1>
+      <p>Ⅵ-02 적정 기술과 지속 가능한 발전 · 교과서 240~249쪽</p>
+    </div>
+  </header>
+
+  <!-- 학생 정보 -->
+  <div class="card" id="stuCard">
+    <div class="stu-done" id="stuDone">
+      <span>👋 <b id="stuText"></b> 학생, 궁금한 것을 물어보세요!</span>
+      <button class="btn ghost small" id="stuEdit">✏️ 바꾸기</button>
+    </div>
+  </div>
+
+  <!-- 주제 탭 -->
+  <div class="tabs" id="tabs"></div>
+
+  <!-- 질문 화면 -->
+  <div id="chatView">
+    <div class="custom" id="customRow">
+      <span>✏️ 주제:</span>
+      <input id="customTopic" maxlength="40" placeholder="예) 우리 동네 쓰레기 문제, 친환경 교복">
+    </div>
+    <div class="chips" id="chips"></div>
+    <div id="chat"></div>
+  </div>
+
+  <!-- 예상 문제 화면 -->
+  <div id="quizView">
+    <div class="qtabs" id="qtabs"></div>
+    <div class="note" id="qdesc"></div>
+    <div id="qlist"></div>
+    <div class="score" id="qscore"></div>
+    <div class="qact">
+      <button class="btn" id="qgrade">✅ 채점하기</button>
+      <button class="btn ghost" id="qretry" style="display:none">🔄 다시 풀기</button>
+    </div>
+  </div>
+</div>
+
+<div class="bar" id="bar">
+  <div class="in">
+    <textarea id="q" rows="1" maxlength="500" placeholder="질문을 입력하세요 (예: 큐드럼 영상 보여 줘)"></textarea>
+    <button class="btn" id="send">보내기</button>
+  </div>
+  <div class="hint">“영상·유튜브” → 영상 바로 재생 · “사진·이미지” → 사진 · 답변 아래 🔎로 포털 검색 · 질문과 답은 선생님 시트에 기록돼요</div>
+  <div class="hint" id="credit2"></div>
+</div>
+
+<script>
+/* ================== 설정 ================== */
+var TOPICS = [
+  {id:'all',   name:'🌍 전체'},
+  {id:'at',    name:'🛠️ 적정 기술'},
+  {id:'sd',    name:'♻️ 지속 가능한 발전'},
+  {id:'act',   name:'🙋 실천과 노력(SDGs)'},
+  {id:'cases', name:'💡 적정 기술 사례'},
+  {id:'solar', name:'☀️ 태양열 조리기'},
+  {id:'custom',name:'✏️ 직접 입력'},
+  {id:'quiz',  name:'📝 예상 문제'}
+];
+// Code.gs의 EXAMPLES와 같게 유지 (미리 답해 둔 질문은 아주 빨라요)
+var EXAMPLES = {
+  all:   ['적정 기술이 뭐예요?','지속 가능한 발전이 뭐예요?','생활 속에서 실천할 수 있는 일은?','적정 기술 영상 보여 줘'],
+  at:    ['적정 기술이 뭐예요?','적정 기술의 조건 5가지를 알려 줘','적정 기술은 가난한 나라만을 위한 기술인가요?','적정 기술 영상 보여 줘','적정 기술 최신 뉴스 찾아 줘'],
+  sd:    ['지속 가능한 발전이 뭐예요?','환경적·사회적·경제적 지속성의 차이는?','태양광으로 수익을 내는 마을은 왜 지속 가능한 발전 사례예요?','지속 가능한 발전 영상 보여 줘'],
+  act:   ['UN의 17가지 지속 가능한 발전 목표를 알려 줘','생활 속에서 실천할 수 있는 일은?','로컬 푸드가 왜 지속 가능한 발전에 도움이 돼요?','SDGs 영상 보여 줘'],
+  cases: ['큐드럼은 어떤 적정 기술이에요?','몽골 축열기 G-saver는 어떤 효과가 있어요?','태양 증류 정수기의 원리는?','라이프스트로 사진 보여 줘'],
+  solar: ['포물선형과 상자형 태양열 조리기의 차이는?','PMI 기법이 뭐예요?','태양열 조리기 온도를 높이려면?','압전 소자는 어떻게 전기를 만들어요?','태양열 조리기 만들기 영상 보여 줘'],
+  custom:['이 주제와 관련된 적정 기술 아이디어를 알려 줘','이 주제를 지속 가능한 발전과 연결하면?','관련 자료 찾아 줘','관련 사진 보여 줘']
+};
+
+/* ================== 예상 문제 (영역별 O·X + 5지선다) ================== */
+// t:'ox' → a:'O' 또는 'X' / t:'mc' → o: 보기 5개, a: 정답 번호(0=①, 1=②, 2=③, 3=④, 4=⑤)
+var QUIZ = {
+  at: { name:'🛠️ 적정 기술', items:[
+    {t:'ox', q:'적정 기술은 정치적·문화적·환경적 조건을 고려하여 기술의 혜택을 필요로 하는 지역에 지속적인 개발이 가능하게 하는 활동이나 방법이다.', a:'O', e:'적정 기술의 뜻 그대로예요.'},
+    {t:'ox', q:'적정 기술은 기술이 낙후된 어려운 나라의 사람들만을 위한 기술이다.', a:'X', e:'처음에는 어려운 나라를 위해 시작됐지만, 오늘날에는 환경 보존과 인류의 삶을 개선하는 미래 기술로도 주목받아요.'},
+    {t:'ox', q:'적정 기술은 그 지역의 기술로 제작 및 유지가 가능해야 한다.', a:'O', e:'고장 나도 그 지역에서 고칠 수 있어야 오래 쓸 수 있어요.'},
+    {t:'ox', q:'적정 기술은 비싸고 성능이 뛰어난 첨단 재료로 만들어야 효과가 크다.', a:'X', e:'적정 기술은 적은 비용으로 제작할 수 있어야 해요.'},
+    {t:'ox', q:'적정 기술은 사용 방법이 복잡하더라도 성능만 좋으면 된다.', a:'X', e:'사용 방법이 간단해야 누구나 쉽게 이용할 수 있어요.'},
+    {t:'ox', q:'적정 기술은 재생 가능한 에너지 자원을 활용해야 한다.', a:'O', e:'태양열·태양광, 사람의 힘 같은 재생 가능한 에너지를 활용해요.'},
+    {t:'mc', q:'적정 기술의 의미로 가장 알맞은 것은?', o:['가장 최신의 첨단 과학을 이용하는 기술','정치적·문화적·환경적 조건을 고려하여 기술의 혜택을 필요로 하는 지역에 지속적인 개발이 가능하게 하는 방법','대기업이 큰 이윤을 얻기 위해 개발하는 기술','군사적 목적으로 개발된 기술','선진국에서만 사용할 수 있는 기술'], a:1, e:'적정 기술은 그 지역의 조건을 고려해 꼭 필요한 곳에 혜택을 주는 기술이에요.'},
+    {t:'mc', q:'적정 기술의 조건으로 알맞지 <u>않은</u> 것은?', o:['사용 방법이 간단해야 한다.','적은 비용으로 제작이 가능해야 한다.','누구나 쉽게 이용하고 혜택을 받아야 한다.','재생 가능한 에너지 자원을 활용해야 한다.','외국의 전문 기술자만 고칠 수 있어야 한다.'], a:4, e:'적정 기술은 그 지역의 기술로 제작 및 유지가 가능해야 해요.'},
+    {t:'mc', q:'적정 기술이 처음 시작된 목적으로 가장 알맞은 것은?', o:['우주 탐사 기술을 발전시키기 위해','고급 제품을 수출하기 위해','군사력을 강화하기 위해','기술이 낙후되고 어려운 나라 사람들의 삶의 질을 높이기 위해','공장을 자동화하기 위해'], a:3, e:'적정 기술은 어려운 나라 사람들의 삶의 질 향상을 위해 시작되었어요.'},
+    {t:'mc', q:'오늘날 적정 기술이 주목받는 이유로 알맞은 것을 모두 고른 것은?', box:'ㄱ. 환경을 보존한다.\nㄴ. 우리의 삶을 더욱 편리하게 한다.\nㄷ. 인류의 삶을 지속적으로 개선해 준다.\nㄹ. 소수 기업의 이익을 크게 늘려 준다.', o:['ㄱ','ㄱ, ㄴ','ㄱ, ㄴ, ㄷ','ㄴ, ㄹ','ㄱ, ㄴ, ㄷ, ㄹ'], a:2, e:'적정 기술은 환경 보존, 삶의 편리, 인류의 삶 개선을 위한 미래 기술로 주목받아요.'},
+    {t:'mc', q:'다음 중 적정 기술의 조건에 가장 잘 맞는 제품은?', o:['마을에서 구한 재료로 만들고 직접 고칠 수 있는 태양열 조리기','전문가만 다룰 수 있는 비싼 정수 장비','수입 부품이 있어야만 고칠 수 있는 발전기','전기를 많이 쓰는 대형 냉방기','사용 방법이 매우 복잡한 자동 기계'], a:0, e:'적은 비용, 간단한 사용법, 지역 기술로 제작·유지, 재생 에너지 활용의 조건을 모두 갖췄어요.'},
+    {t:'mc', q:'적정 기술이 ‘그 지역의 기술로 제작 및 유지가 가능해야 하는’ 까닭으로 가장 알맞은 것은?', o:['외국 기업이 이익을 얻을 수 있기 때문에','제품을 비싸게 팔 수 있기 때문에','디자인을 화려하게 만들 수 있기 때문에','전문가만 사용할 수 있게 하려고','고장 나도 지역 사람들이 스스로 고쳐 오래 쓸 수 있기 때문에'], a:4, e:'스스로 만들고 고칠 수 있어야 지속적으로 사용할 수 있어요.'}
+  ]},
+  sd: { name:'♻️ 지속 가능한 발전', items:[
+    {t:'ox', q:'지속 가능한 발전은 미래 세대에 필요한 것을 저해하지 않으면서 현재에 필요한 것을 충족하는 발전이다.', a:'O', e:'지속 가능한 발전의 뜻이에요.'},
+    {t:'ox', q:'지속 가능한 발전은 환경적, 경제적, 예술적 측면에서 균형 있게 이루어져야 한다.', a:'X', e:'예술적이 아니라 사회적 측면이에요. (환경적·사회적·경제적)'},
+    {t:'ox', q:'지속 가능한 발전은 현재와 미래의 삶의 질을 같이 향상한다.', a:'O', e:'지금 세대와 미래 세대 모두를 생각하는 발전이에요.'},
+    {t:'ox', q:'경제적 이익만 많이 얻을 수 있다면 환경이 조금 오염되어도 지속 가능한 발전이다.', a:'X', e:'환경적·사회적·경제적 측면이 균형을 이루어야 해요.'},
+    {t:'ox', q:'제품의 개발, 사용, 폐기 과정에서 환경에 해가 없어야 하는 것은 환경적 지속성이다.', a:'O', e:'환경적 지속성은 환경에 해가 없고 환경 보존에 도움을 주는 것이에요.'},
+    {t:'ox', q:'사회적 지속성은 모든 인류가 건강하고 평등한 삶을 누리게 하는 발전을 뜻한다.', a:'O', e:'개발 결과가 사회에 미치는 영향을 고려하는 것도 사회적 지속성이에요.'},
+    {t:'mc', q:'지속 가능한 발전의 의미로 가장 알맞은 것은?', o:['현재 세대만 풍요롭게 사는 발전','미래 세대에 필요한 것을 저해하지 않으면서 현재에 필요한 것을 충족하는 발전','자원을 최대한 빨리 개발하는 발전','경제 성장만을 가장 우선하는 발전','환경 보호를 위해 모든 개발을 멈추는 것'], a:1, e:'현재와 미래를 함께 생각하는 발전이에요.'},
+    {t:'mc', q:'지속 가능한 발전을 위해 균형 있게 고려해야 할 세 가지 측면으로 옳은 것은?', o:['정치적·군사적·경제적','환경적·예술적·경제적','문화적·사회적·종교적','환경적·사회적·경제적','과학적·기술적·예술적'], a:3, e:'환경적·사회적·경제적 측면에서 균형 있고 통합적인 발전이 필요해요.'},
+    {t:'mc', q:'다음 설명은 어떤 지속성에 해당하나요?', box:'제품의 개발, 사용, 폐기 과정에서 환경에 해가 없어야 하며, 지속적으로 환경 보존에 도움을 주어야 한다.', o:['사회적 지속성','경제적 지속성','환경적 지속성','문화적 지속성','정치적 지속성'], a:2, e:'환경에 주는 영향을 생각하는 것은 환경적 지속성이에요.'},
+    {t:'mc', q:'다음 설명은 어떤 지속성에 해당하나요?', box:'개발 결과가 우리 사회에 미치는 영향을 고려하고, 모든 인류가 건강하고 평등한 삶을 누리게 해야 한다.', o:['사회적 지속성','환경적 지속성','경제적 지속성','기술적 지속성','정치적 지속성'], a:0, e:'사회와 사람들의 평등한 삶을 생각하는 것은 사회적 지속성이에요.'},
+    {t:'mc', q:'“제품의 생산·판매 과정에서 얻은 경제적 이득을 사회에 좋은 목적으로 사용하고, 더 나은 제품을 만드는 밑거름이 되어야 한다.”는 어떤 지속성인가요?', o:['환경적 지속성','사회적 지속성','문화적 지속성','경제적 지속성','예술적 지속성'], a:3, e:'얻은 이익을 어떻게 쓰는지는 경제적 지속성이에요.'},
+    {t:'mc', q:'다음 마을 사례에 대한 설명으로 옳지 <u>않은</u> 것은?', box:'○○○ 마을은 지붕 위에 태양광 발전 설비를 설치해 전력 공급과 냉난방, 온수 공급에 이용하고, 태양광 발전으로 얻은 수익을 마을 학생들의 장학금과 마을 운영비로 사용한다.', o:['재생 가능한 에너지를 이용한다.','에너지 비용을 줄일 수 있다.','수익을 마을 발전에 쓰는 것은 경제적 지속성과 관련 있다.','지속 가능한 발전의 성공 사례로 볼 수 있다.','화석 연료 사용을 늘려 환경적 지속성을 높였다.'], a:4, e:'태양광 발전은 화석 연료 사용을 줄여요.'},
+    {t:'mc', q:'옹달샘 이야기에서 마을 사람들이 오랫동안 물을 먹기 위한 방법으로 지속 가능한 발전에 가장 알맞은 것은?', o:['물을 많은 사람들에게 전부 팔아 이익을 얻는다.','먼저 온 사람이 원하는 만큼 가져가게 한다.','필요한 만큼만 물을 떠 갈 수 있도록 한다.','옹달샘을 막아 아무도 쓰지 못하게 한다.','물을 다른 마을로 모두 옮긴다.'], a:2, e:'지금 필요한 만큼만 쓰고 미래에도 쓸 수 있게 하는 것이 지속 가능한 발전이에요.'}
+  ]},
+  act: { name:'🙋 실천과 노력(SDGs)', items:[
+    {t:'ox', q:'국제 연합(UN)은 2015년부터 2030년까지 17가지 지속 가능한 발전 목표(SDGs)를 정했다.', a:'O', e:'경제 성장, 사회 발전, 환경 보전 등에 관한 17가지 목표예요.'},
+    {t:'ox', q:'지속 가능한 발전을 위해서는 국가 및 국제 사회의 노력만 있으면 된다.', a:'X', e:'국가의 노력과 함께 개인의 실천도 꼭 필요해요.'},
+    {t:'ox', q:'가까운 지역에서 생산된 먹을거리를 선택하는 것도 지속 가능한 발전에 도움이 된다.', a:'O', e:'운송 거리가 짧아 에너지가 덜 들고 탄소 배출도 줄어요.'},
+    {t:'ox', q:'할인 행사를 할 때 필요하지 않은 물건도 많이 사 두는 것은 지속 가능한 소비이다.', a:'X', e:'나에게 꼭 필요한 물건인지 생각한 후 사야 해요.'},
+    {t:'ox', q:'쓰레기의 양을 줄이고 분리 배출하는 것은 개인이 할 수 있는 실천이다.', a:'O', e:'자원과 에너지 영역의 실천이에요.'},
+    {t:'ox', q:'겨울철 실내에서 내복을 입는 것은 에너지 절약과 관계가 없다.', a:'X', e:'내복을 입으면 난방 에너지를 아낄 수 있어요.'},
+    {t:'mc', q:'국제 연합(UN)이 정한 지속 가능한 발전 목표(SDGs)에 대한 설명으로 옳은 것은?', o:['2000년부터 2015년까지, 8가지 목표','2010년부터 2020년까지, 10가지 목표','2015년부터 2030년까지, 17가지 목표','2020년부터 2050년까지, 17가지 목표','2015년부터 2030년까지, 20가지 목표'], a:2, e:'UN은 2015~2030년 17가지 목표를 정했어요.'},
+    {t:'mc', q:'지속 가능한 발전을 위한 개인의 실천으로 알맞지 <u>않은</u> 것은?', o:['여름철 실내 온도를 26℃로 유지한다.','가까운 지역에서 생산된 먹을거리를 소비한다.','사용하지 않는 가전제품의 플러그를 뽑는다.','가까운 거리는 걷거나 대중교통을 이용한다.','편리하니까 일회용 컵을 자주 사용한다.'], a:4, e:'일회용품 사용은 줄여야 해요.'},
+    {t:'mc', q:'‘소비 방식’에서 지속 가능한 발전을 위한 실천으로 알맞은 것은?', o:['유행이 바뀔 때마다 새 옷을 산다.','과도하게 포장된 제품이나 일회용품 구입을 줄인다.','묶음 할인이면 필요 없어도 산다.','아직 쓸 수 있는 물건을 바로 버린다.','배달 음식의 일회용 수저를 늘 받는다.'], a:1, e:'과대 포장·일회용품을 줄이고 꼭 필요한 물건만 사요.'},
+    {t:'mc', q:'로컬 푸드(가까운 지역 먹을거리)에 대한 설명으로 옳지 <u>않은</u> 것은?', o:['포장재와 운송 연료를 더 많이 사용한다.','운송 거리가 짧아 에너지를 아낄 수 있다.','탄소 배출을 줄일 수 있다.','지역 농가의 경제에 도움이 된다.','신선한 먹을거리를 얻을 수 있다.'], a:0, e:'로컬 푸드는 운송 거리가 짧아 연료와 포장을 줄일 수 있어요.'},
+    {t:'mc', q:'지속 가능한 발전을 위한 국가의 노력으로 가장 알맞은 것은?', o:['다른 나라와의 교류를 모두 끊는다.','다른 나라와 자원 개발 경쟁을 벌인다.','환경 관련 규제를 모두 없앤다.','협력 기구, 국제회의 및 협약 등을 통해 실천하고 협력한다.','자기 나라의 이익만 생각한다.'], a:3, e:'국가는 지속 가능한 발전의 필요성에 공감하고 국제적으로 협력해요.'},
+    {t:'mc', q:'‘자원과 에너지’ 영역의 실천으로 옳은 것을 모두 고른 것은?', box:'ㄱ. 쓰레기의 양을 최소로 줄여 분리 배출한다.\nㄴ. 사용하지 않는 가전제품의 플러그를 뽑는다.\nㄷ. 가까운 거리도 늘 자동차를 타고 간다.\nㄹ. 에너지 효율 등급이 높은 제품을 사용한다.', o:['ㄱ, ㄴ','ㄱ, ㄷ','ㄱ, ㄴ, ㄹ','ㄴ, ㄷ, ㄹ','ㄱ, ㄴ, ㄷ, ㄹ'], a:2, e:'가까운 거리는 걷거나 대중교통을 이용해야 해요.'}
+  ]},
+  cases: { name:'💡 적정 기술 사례', items:[
+    {t:'ox', q:'저가형 인큐베이터는 장비를 유지·보수하기 어려운 개발 도상국의 미숙아를 위해 개발되었다.', a:'O', e:'개발 도상국에서는 한 해 약 2천만 명의 미숙아가 태어나요.'},
+    {t:'ox', q:'농사에 필요한 물을 주는 펌프는 전기 모터로만 작동한다.', a:'X', e:'사람이 발로 밟는 힘으로 작동해 물을 끌어 올려요.'},
+    {t:'ox', q:'태양 증류 정수기는 태양열로 물을 증발시켜 깨끗한 물을 얻는다.', a:'O', e:'증발된 물이 벽면을 따라 바닥에 모이면 병에 담아 마셔요.'},
+    {t:'ox', q:'몽골의 축열기(G-saver)는 연료 소모량을 늘리는 대신 집을 더 따뜻하게 한다.', a:'X', e:'연료 소모량을 약 40% 줄이고 열효율을 약 30% 높여요.'},
+    {t:'ox', q:'에너지 블록은 사람들이 걸을 때 생기는 압력으로 전기를 생산한다.', a:'O', e:'압력이나 진동을 이용한 에너지 생산이에요.'},
+    {t:'ox', q:'체온으로 전기를 생산하는 웨어러블 발전 소자는 체온에 의해 생기는 옷감의 온도 차를 이용한다.', a:'O', e:'웨어러블 기기의 전력 공급 문제를 해결할 수 있는 기술이에요.'},
+    {t:'mc', q:'다음 설명에 해당하는 적정 기술은?', box:'화창한 날 바닷물이나 오염된 물을 붓고 기다리면 태양열로 증발이 일어나고, 증발된 물은 벽면을 따라 바닥에 모인다. 24시간 동안 1리터 이상의 물을 얻을 수 있다.', o:['저가형 인큐베이터','발로 밟는 펌프','축열기(G-saver)','태양 증류 정수기','에너지 블록'], a:3, e:'태양열로 물을 증류하는 정수기예요.'},
+    {t:'mc', q:'몽골 축열기(G-saver)에 대한 설명으로 옳은 것은?', o:['열효율을 약 30% 높이고 연료 소모량을 약 40% 줄인다.','열효율은 낮아지고 연료 소모량은 늘어난다.','전기로만 작동하는 난방기이다.','오염된 물을 깨끗하게 만든다.','대기 오염을 더 늘린다.'], a:0, e:'게르의 난로 위에 부착해 연료를 아끼고 대기 오염을 줄여요.'},
+    {t:'mc', q:'사람이 발로 밟는 힘으로 물을 끌어 올려 농가에 큰 도움을 준 적정 기술은?', o:['큐드럼','발로 밟는 펌프(페달 펌프)','태양열 온수기','라이프스트로','에너지 블록'], a:1, e:'최소한의 비용으로 만들어 지역 여건에 맞춘 성공 사례예요.'},
+    {t:'mc', q:'압력이나 진동을 이용하여 전기를 생산하는 사례는?', o:['태양열 온수기','태양광 휴대 전화 충전소','체온 웨어러블 발전 소자','축열기(G-saver)','신발을 이용한 에너지 생산'], a:4, e:'걸을 때 신발 바닥에 주어지는 압력으로 전기를 만들어요.'},
+    {t:'mc', q:'태양 에너지를 이용한 사례끼리 바르게 묶은 것은?', o:['에너지 블록, 신발 발전','체온 웨어러블 발전 소자, 축열기','태양광 휴대 전화 충전소, 태양열 온수기','발로 밟는 펌프, 저가형 인큐베이터','에너지 블록, 태양열 온수기'], a:2, e:'태양광으로 전기를, 태양열로 물을 데워요.'},
+    {t:'mc', q:'태양 증류 정수기에 대한 설명으로 옳지 <u>않은</u> 것은?', o:['바닷물이나 오염된 물을 사용할 수 있다.','태양열로 물을 증발시킨다.','증발된 물이 벽면을 따라 바닥에 모인다.','24시간 동안 1리터 이상의 물을 얻을 수 있다.','전기 히터로 물을 끓여야 작동한다.'], a:4, e:'전기 없이 태양열만으로 작동해요.'}
+  ]},
+  solar: { name:'☀️ 태양열 조리기·압전', items:[
+    {t:'ox', q:'적정 기술 문제 해결 과정은 ‘문제 확인 → 아이디어 탐색과 선정 → 아이디어 구체화 → 실행 → 평가’ 순서이다.', a:'O', e:'문제를 확인한 뒤 아이디어를 찾고, 구상도로 구체화한 다음 만들고 평가해요.'},
+    {t:'ox', q:'포물선형 태양열 조리기는 제작하기 쉽지만 많은 양의 조리가 어렵고 열효율이 떨어진다.', a:'X', e:'이것은 상자형의 특징이에요.'},
+    {t:'ox', q:'상자형 태양열 조리기는 태양의 어느 방향이든 조리가 가능하다.', a:'O', e:'상자형은 제작이 쉽고 방향에 상관없이 조리할 수 있어요.'},
+    {t:'ox', q:'PMI 기법은 아이디어의 장점, 단점, 흥미로운 점을 기준으로 최적의 아이디어를 고르는 방법이다.', a:'O', e:'P(장점), M(단점), I(흥미로운 점)이에요.'},
+    {t:'ox', q:'교과서의 태양열 조리기는 가로·세로·높이 50cm 이상으로 크게 만들어야 한다.', a:'X', e:'가로·세로·높이 30cm 이하로 만들어요.'},
+    {t:'ox', q:'압전 소자는 압력을 가하면 전기가 생기는 성질을 이용한다.', a:'O', e:'휴대용 가스레인지, 가스 점화 장치 등에 쓰여요.'},
+    {t:'mc', q:'적정 기술 문제 해결 과정을 순서대로 바르게 나열한 것은?', o:['아이디어 탐색 → 문제 확인 → 실행 → 아이디어 구체화 → 평가','문제 확인 → 실행 → 아이디어 탐색과 선정 → 평가 → 아이디어 구체화','실행 → 문제 확인 → 아이디어 구체화 → 아이디어 탐색 → 평가','평가 → 문제 확인 → 아이디어 탐색 → 실행 → 아이디어 구체화','문제 확인 → 아이디어 탐색과 선정 → 아이디어 구체화 → 실행 → 평가'], a:4, e:'문제 확인부터 시작해 평가로 끝나요.'},
+    {t:'mc', q:'교과서의 태양열 조리기 만들기 문제 해결 조건으로 옳은 것은?', o:['크기는 가로·세로·높이 50cm 이상으로 한다.','크기는 가로·세로·높이 30cm 이하로 하고, 주변에서 쉽게 구할 수 있는 안전한 재료를 쓴다.','반드시 금속 판을 용접해서 만든다.','전기를 연결해 온도를 높인다.','비싼 수입 재료만 사용한다.'], a:1, e:'30cm 이하 크기와 쉽게 구할 수 있는 안전한 재료가 조건이에요.'},
+    {t:'mc', q:'포물선형 태양열 조리기의 특징으로 옳은 것은?', o:['만들기 가장 쉽고 방향을 조절할 필요가 없다.','많은 양의 조리가 어렵고 열효율이 낮다.','전기를 연결해야 작동한다.','둥근 모양으로 열을 많이 모으지만, 태양의 위치에 따라 방향을 조절해야 한다.','그늘에서도 잘 작동한다.'], a:3, e:'포물선형은 열을 가장 많이 모을 수 있어요.'},
+    {t:'mc', q:'PMI 기법에서 P, M, I가 뜻하는 것으로 옳은 것은?', o:['P: 문제, M: 방법, I: 아이디어','P: 계획, M: 재료, I: 실행','P: 장점, M: 단점, I: 흥미로운 점','P: 가격, M: 모양, I: 정보','P: 과정, M: 측정, I: 개선'], a:2, e:'Plus(장점), Minus(단점), Interesting(흥미로운 점)이에요.'},
+    {t:'mc', q:'교과서의 태양열 조리기 만들기 준비물이 <u>아닌</u> 것은?', o:['전기 히터','종이 박스','알루미늄 테이프','온도계','글루건'], a:0, e:'태양열 조리기는 전기 없이 햇빛만으로 데워요.'},
+    {t:'mc', q:'태양열 조리기 평가표에서 ‘산출물 평가’ 내용으로 알맞은 것은?', o:['모둠원의 의견을 경청하고 존중하였는가?','문제 해결 활동 과정에서 안전 수칙을 준수하였는가?','문제 해결을 위한 아이디어를 충분히 탐색하였는가?','문제 해결을 위한 자료 수집은 충분히 이루어졌는가?','내부에 장착한 조리용 미니 용기 안에 물의 온도 변화가 있는가?'], a:4, e:'만든 결과물(산출물)이 실제로 잘 작동하는지 평가해요.'},
+    {t:'mc', q:'압전 소자를 이용한 제품으로 알맞은 것은?', o:['냉장고의 냉각 장치','휴대용 가스레인지의 점화 장치','태양광 패널','풍력 발전기의 날개','전기밥솥의 가열판'], a:1, e:'누르면 ‘딸깍’ 하며 불꽃이 튀는 점화 장치에 압전 소자가 쓰여요.'}
+  ]}
+};
+var QUIZ_AREA = {all:'all', at:'at', sd:'sd', act:'act', cases:'cases', solar:'solar', custom:'all'};
+function quizCount(k){ return k==='all' ? Object.keys(QUIZ).reduce(function(n,a){ return n+QUIZ[a].items.length; },0) : QUIZ[k].items.length; }
+
+/* ================== 상태 ================== */
+var S = {topic:'all', qset:'all', items:[], student:null, busy:false, graded:false};
+var $ = function(id){return document.getElementById(id);};
+
+/* ================== 서버 호출 (미리보기용 가짜 서버 포함) ================== */
+function run(fn, arg){
+  return new Promise(function(ok, no){
+    if (typeof google === 'undefined' || !google.script) return ok(mock(fn, arg));
+    var r = google.script.run.withSuccessHandler(ok).withFailureHandler(no);
+    r[fn](arg);
+  });
+}
+function mock(fn, a){
+  if (fn==='askQuestion') return new Promise(function(r){setTimeout(function(){r({answer:'(미리보기용 가짜 답변) 실제 화면에서는 AI가 답해요.\n1. 첫째\n2. 둘째\n3. 셋째\n🤔 생각해 보기: 우리 주변에 적정 기술이 필요한 곳은 어디일까요?',sources:[{type:'위키백과',title:'적정기술',url:'https://ko.wikipedia.org/wiki/적정기술'},{type:'뉴스',title:'예시 뉴스 제목',url:'#',snippet:'예시신문 (2026.11.01)'}],sec:'1.2',model:'미리보기'});},700);});
+  if (fn==='findVideos') return [{id:'THW4RcJKmx4',title:'적정기술을 아시나요?',ch:'YTN 사이언스'},{id:'gAveUQtsYDI',title:'따뜻한 발명, 적정기술을 만나다',ch:''}];
+  if (fn==='findPhotos') return [];
+  if (fn==='gradeWritten') return {level:'중',feedback:'✅ 잘한 점: 필요한 만큼만 쓰자는 방법이 좋아요.\n💡 더 좋아지려면: 미래 세대와 연결해 설명해 보세요.'};
+  if (fn==='getAppInfo') return {version:'미리보기', serverVideos:false};
+  if (fn==='getBackground') return (a==='main' ? window.MOCK_BG2 : window.MOCK_BG) || [];
+  return true;
+}
+
+/* ================== 학생 정보 ================== */
+function loadStudent(){
+  try {
+    var s = JSON.parse(localStorage.getItem('atbot_student')||'null');
+    if (s && s.name){ fillForm(s); $('stuOk').textContent = '▶ '+s.name+' 학생으로 계속하기'; }
+  } catch(e){}
+}
+function fillForm(s){ $('grade').value = s.grade||'3'; $('cls').value = s.cls||''; $('num').value = s.num||''; $('name').value = s.name||''; }
+function setStudent(s){
+  S.student = s;
+  $('stuText').textContent = s.grade+'학년 '+s.cls+'반 '+s.num+'번 '+s.name;
+  try { localStorage.setItem('atbot_student', JSON.stringify(s)); } catch(e){}
+}
+function showStart(){
+  $('start').style.display='flex';
+  if (S.student){ fillForm(S.student); $('stuOk').textContent='✅ 바꾼 정보로 시작하기'; }
+  setTimeout(function(){ $('cls').focus(); }, 50);
+}
+function enterApp(){
+  $('start').classList.add('out');
+  setTimeout(function(){ $('start').style.display='none'; $('start').classList.remove('out'); }, 450);
+  window.scrollTo(0,0);
+  if (S.topic!=='quiz') setTimeout(function(){ $('q').focus(); }, 460);
+}
+$('stuOk').onclick = function(){
+  var s = {grade:$('grade').value, cls:$('cls').value.trim(), num:$('num').value.trim(), name:$('name').value.trim()};
+  var miss = ['cls','num','name'].filter(function(k){return !s[k];});
+  ['cls','num','name'].forEach(function(k){$(k).classList.toggle('warn', miss.indexOf(k)>-1);});
+  if (miss.length) { $(miss[0]).focus(); return; }
+  setStudent(s);
+  enterApp();
+};
+['cls','num','name'].forEach(function(k){
+  $(k).addEventListener('keydown', function(e){ if (e.key==='Enter' && !e.isComposing){ e.preventDefault(); $('stuOk').click(); } });
+});
+$('stuEdit').onclick = showStart;
+function needStudent(){
+  if (S.student) return false;
+  showStart();
+  return true;
+}
+
+/* ---------- 시작 화면 배경 사진 (8초마다 바뀜) ---------- */
+var BG = {list:[], i:-1, front:'bg1'};
+function loadBg(){
+  run('getBackground', 'start').then(function(list){
+    BG.list = (list||[]).filter(function(x){ return x && x.url; });
+    for (var i=BG.list.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=BG.list[i]; BG.list[i]=BG.list[j]; BG.list[j]=t; }
+    if (!BG.list.length) return;
+    showBg(0);
+    if (BG.list.length>1) setInterval(function(){ if ($('start').style.display!=='none') showBg((BG.i+1)%BG.list.length); }, 8000);
+  }).catch(function(){});
+}
+function showBg(i){
+  var it = BG.list[i], img = new Image();
+  img.onload = function(){
+    BG.i = i;
+    var next = BG.front==='bg1'?'bg2':'bg1';
+    $(next).style.backgroundImage = 'url("'+it.url.replace(/"/g,'%22')+'")';
+    $(next).classList.add('on'); $(BG.front).classList.remove('on');
+    BG.front = next;
+    var c = [it.title, it.author, it.license].filter(Boolean).map(esc).join(' · ');
+    $('credit').innerHTML = c ? '📷 '+(it.page?'<a href="'+attr(it.page)+'" target="_blank">'+c+'</a>':c)+(it.page?' (위키미디어 공용)':'') : '';
+  };
+  img.onerror = function(){ BG.list.splice(i,1); if (BG.list.length) showBg(i % BG.list.length); };
+  img.src = it.url;
+}
+
+/* ---------- 두 번째 화면 배경 (생명 기술 사진, 들어올 때마다 1장) ---------- */
+function loadBg2(){
+  run('getBackground', 'main').then(function(list){
+    list = (list||[]).filter(function(x){ return x && x.url; });
+    var tryOne = function(){
+      if (!list.length) return;
+      var it = list.splice(Math.floor(Math.random()*list.length),1)[0], img = new Image();
+      img.onload = function(){
+        $('ph').style.backgroundImage = 'url("'+it.url.replace(/"/g,'%22')+'")';
+        $('ph').classList.add('on');
+        var c = [it.title, it.author, it.license].filter(Boolean).map(esc).join(' · ');
+        $('credit2').innerHTML = c ? '📷 배경: '+(it.page?'<a href="'+attr(it.page)+'" target="_blank">'+c+'</a> (위키미디어 공용)':c) : '';
+      };
+      img.onerror = tryOne;
+      img.src = it.url;
+    };
+    tryOne();
+  }).catch(function(){});
+}
+function base(){ var s=S.student||{}; return {grade:s.grade, cls:s.cls, num:s.num, name:s.name}; }
+
+/* ================== 탭 ================== */
+function drawTabs(){
+  $('tabs').innerHTML = '';
+  TOPICS.forEach(function(t){
+    var b = document.createElement('button');
+    b.className = 'tab'+(t.id==='quiz'?' quiz':'')+(S.topic===t.id?' on':'');
+    b.textContent = t.name;
+    b.onclick = function(){ if (t.id==='quiz' && S.topic!=='quiz' && QUIZ_AREA[S.topic]) S.qset=QUIZ_AREA[S.topic]; S.topic = t.id; drawTabs(); };
+    $('tabs').appendChild(b);
+  });
+  var quiz = S.topic==='quiz';
+  $('chatView').style.display = quiz?'none':'block';
+  $('quizView').style.display = quiz?'block':'none';
+  $('bar').style.display = quiz?'none':'block';
+  if (!quiz) setTimeout(fitBar, 0);
+  $('customRow').style.display = S.topic==='custom'?'flex':'none';
+  if (quiz) drawQuiz(); else drawChips();
+}
+function drawChips(){
+  $('chips').innerHTML='';
+  (EXAMPLES[S.topic]||EXAMPLES.all).forEach(function(x){
+    var c=document.createElement('button'); c.className='chip'; c.textContent=x;
+    c.onclick=function(){ ask(x); }; $('chips').appendChild(c);
+  });
+  var area = QUIZ_AREA[S.topic]||'all';
+  var g=document.createElement('button'); g.className='chip go-quiz';
+  g.textContent = area==='all' ? '📝 전체 예상 문제 풀기 ('+quizCount('all')+'문제)' : '📝 '+QUIZ[area].name.replace(/^\S+\s/,'')+' 예상 문제 풀기 ('+quizCount(area)+'문제)';
+  g.onclick=function(){ openQuiz(area); }; $('chips').appendChild(g);
+}
+
+/* ================== 내장 영상 (학생 화면에서 바로 재생) ================== */
+// 2026-11 유튜브 검색으로 찾은 실제 교육 영상. 지워진 영상은 자동으로 빠짐. 선생님 추천은 '영상목록' 시트에 넣으면 앞에 나와요
+var VIDEOS = [
+  {id:'THW4RcJKmx4', title:'적정기술을 아시나요?', ch:'YTN 사이언스', tags:['at','cases']},
+  {id:'gAveUQtsYDI', title:'따뜻한 발명, 적정기술을 만나다', tags:['at','cases']},
+  {id:'fshWuud1gl0', title:'세상을 바꾼 적정기술 (의미, 종류, 원리, 요건)', tags:['at','cases']},
+  {id:'LvELVcNcFs8', title:'따뜻한 기술, 적정기술이란 무엇인가 (개념·조건·사례)', tags:['at']},
+  {id:'u11TrJSD1ZU', title:'적정기술을 알아보자!', tags:['at']},
+  {id:'T-Yh0eqr-Nk', title:'가난한 90%에게 희망을 찾아 주는 발명, 적정기술', tags:['at','cases']},
+  {id:'3vkUVCsC6P0', title:'글로벌 시대의 적정 기술 ② 적정 기술의 사례', tags:['cases']},
+  {id:'a2jxG4Aa5NM', title:'썩은 물을 마시기 위해 10년간 개발한 발명품', tags:['cases','water']},
+  {id:'DhKeDV8sEEw', title:'적정기술 — 발로 밟는 압력 발전기', tags:['piezo','cases']},
+  {id:'yTAZZJ0sEjM', title:'UN 지속가능발전목표 SDGs가 뭐예요?', tags:['sd','sdg']},
+  {id:'ZG9UW2oPcBA', title:'SDGs(지속가능 발전목표) 17가지 알아보기', tags:['sdg','sd','act']},
+  {id:'MiDipYr1sF0', title:'지속가능발전목표 이해 교육 영상', tags:['sd','sdg']},
+  {id:'B7P3ojRQI8Y', title:'지속가능발전교육(ESD)', tags:['sd']},
+  {id:'_1IYrcxGPPQ', title:'청소년이 말하는 SDGs', tags:['sdg','act']},
+  {id:'oWwq1yavkkc', title:'지속가능발전목표(SDGs) 실천을 위한 주사위를 던져 볼까요?', tags:['act','sdg']},
+  {id:'ymxtnaHYVr0', title:'종이상자로 초간단 태양열 조리기 만들기', tags:['solar']},
+  {id:'YRQsDxFGiX4', title:'태양열 조리기 만들기', tags:['solar']},
+  {id:'sckg2Rux30I', title:'종이로 접는 태양열 조리기 만들기', tags:['solar']},
+  {id:'bCwOmHGaCsc', title:'볼프강 쉐플러와 태양열 조리기 (1)', tags:['solar','cases']},
+  {id:'9fIKNTKosk0', title:'압전소자의 원리와 숨은 속사정 [호기심팩토리]', ch:'YTN 사이언스', tags:['piezo']},
+  {id:'WUCI4ZeUXl8', title:'압전 발전기 만들기 — 누르면 전기가 만들어진다', tags:['piezo']}
+];
+var VKEYS = [
+  {re:/큐\s?드럼|라이프\s?스트로|정수|증류|깨끗한\s?물|식수/i, tag:'water'},
+  {re:/태양열\s?조리|조리기|포물선|상자형|pmi/i, tag:'solar'},
+  {re:/압전|피에조|에너지\s?블록|하베스팅|신발|발전기/, tag:'piezo'},
+  {re:/펌프|인큐베이터|미숙아|축열기|지세이버|g-?saver|게르|몽골|사례|발명/i, tag:'cases'},
+  {re:/sdgs?|17\s?가지|17\s?개|유엔|국제\s?연합|\bun\b|목표/i, tag:'sdg'},
+  {re:/실천|분리\s?배출|재활용|쓰레기|일회용|로컬|먹을거리|에너지\s?절약|플러그|대중교통/, tag:'act'},
+  {re:/지속\s?가능/, tag:'sd'},
+  {re:/적정\s?기술|착한\s?기술|따뜻한\s?기술/, tag:'at'}
+];
+var TOPIC_TAG = {all:'at', at:'at', sd:'sd', act:'act', cases:'cases', solar:'solar', custom:'at'};
+
+function localVideos(p){
+  var text = p.question+' '+(p.custom||'');
+  var qTags = VKEYS.filter(function(k){ return k.re.test(text); }).map(function(k){ return k.tag; });
+  if (qTags.indexOf('water')>-1) qTags.push('cases');
+  var tTag = TOPIC_TAG[p.topic]||'at', first = qTags[0]||tTag;
+  return VIDEOS.map(function(v){
+    var s=0; v.tags.forEach(function(t){ if (qTags.indexOf(t)>-1) s+=2; if (t===tTag) s+=1; });
+    if (v.tags.indexOf(first)>-1) s+=0.5;
+    if (v.tags[0]===first) s+=0.3;
+    return {v:v, s:s};
+  }).filter(function(o){ return o.s>0; }).sort(function(a,b){ return b.s-a.s; }).slice(0,6).map(function(o){ return o.v; });
+}
+
+/* ================== 바로 답하는 교과서 질문 (AI를 기다리지 않음) ================== */
+var FAQ = {
+  '적정 기술이 뭐예요?':
+    '**적정 기술**은 정치적·문화적·환경적 조건을 고려하여 기술의 혜택을 필요로 하는 지역에 **지속적인 개발이 가능하게 하는 활동이나 방법**이에요.\n'+
+    '처음에는 기술이 낙후되고 어려운 나라 사람들의 **삶의 질을 높이기 위해** 시작됐어요.\n'+
+    '오늘날에는 환경을 보존하고 삶을 더 편리하게 하며, 인류의 삶을 지속적으로 개선하는 **미래의 기술**로 주목받고 있어요.\n'+
+    '적정 기술이 되려면 다음 **5가지 조건**을 갖춰야 해요.\n'+
+    '1. **사용 방법이 간단**해야 해요.\n2. **적은 비용**으로 제작이 가능해야 해요.\n3. **누구나 쉽게 이용**하고 혜택을 받아야 해요.\n4. **재생 가능한 에너지 자원**을 활용해야 해요.\n5. **그 지역의 기술로 제작 및 유지**가 가능해야 해요.\n'+
+    '🤔 생각해 보기: 우리 학교나 동네에도 적정 기술이 필요한 곳이 있을까요?',
+  '적정 기술의 조건 5가지를 알려 줘':
+    '적정 기술이 되려면 다음 **5가지 조건**을 갖춰야 해요.\n'+
+    '1. **사용 방법이 간단**해야 해요. → 누구나 배우지 않아도 쓸 수 있어요.\n'+
+    '2. **적은 비용으로 제작**이 가능해야 해요. → 형편이 어려운 사람도 가질 수 있어요.\n'+
+    '3. **누구나 쉽게 이용하고 혜택**을 받아야 해요.\n'+
+    '4. **재생 가능한 에너지 자원**을 활용해야 해요. → 태양열·태양광, 사람의 힘 등\n'+
+    '5. **그 지역의 기술로 제작 및 유지**가 가능해야 해요. → 고장 나도 스스로 고칠 수 있어요.\n'+
+    '🤔 생각해 보기: 태양열 조리기는 5가지 조건을 모두 갖추고 있을까요?',
+  '적정 기술은 가난한 나라만을 위한 기술인가요?':
+    '아니에요! 적정 기술은 처음에 기술이 낙후되고 어려운 나라 사람들의 삶의 질을 높이려고 **시작**되었어요.\n'+
+    '하지만 오늘날에는 **환경을 보존**하고, 우리의 **삶을 더욱 편리하게** 하며, **인류의 삶을 지속적으로 개선**해 주는 미래의 기술로 주목받고 있어요.\n'+
+    '그래서 우리 생활 속에서도 적정 기술을 활용할 수 있어요. (예: 태양열 조리기, 에너지 블록, 압전 소자 조명)\n'+
+    '🤔 생각해 보기: 우리나라에서 쓰면 좋을 적정 기술에는 무엇이 있을까요?',
+  '지속 가능한 발전이 뭐예요?':
+    '**지속 가능한 발전**은 **미래 세대에 필요한 것을 저해하지 않으면서 현재에 필요한 것을 충족하는 발전**이에요.\n'+
+    '이를 위해 다음 세 측면에서 **균형 있고 통합적인 발전**이 이루어져야 해요.\n'+
+    '1. **환경적** 지속성\n2. **사회적** 지속성\n3. **경제적** 지속성\n'+
+    '🤔 생각해 보기: 옹달샘 물을 오랫동안 먹으려면 어떻게 해야 할까요?',
+  '환경적·사회적·경제적 지속성의 차이는?':
+    '지속 가능한 발전은 세 측면이 **균형**을 이루어야 해요.\n'+
+    '1. **환경적 지속성**: 제품의 개발·사용·폐기 과정에서 환경에 해가 없고, 지속적으로 환경 보존에 도움을 주어야 해요.\n'+
+    '2. **사회적 지속성**: 개발 결과가 사회에 미치는 영향을 고려하고, 모든 인류가 건강하고 평등한 삶을 누리게 해야 해요.\n'+
+    '3. **경제적 지속성**: 생산·판매로 얻은 경제적 이득을 사회에 좋은 목적으로 쓰고, 더 나은 제품을 만드는 밑거름이 되어야 해요.\n'+
+    '🤔 생각해 보기: 태양광 발전 수익으로 장학금을 주는 마을은 어떤 지속성과 관련 있을까요?',
+  '태양광으로 수익을 내는 마을은 왜 지속 가능한 발전 사례예요?':
+    '그 마을은 세 가지 지속성을 모두 보여 주기 때문이에요.\n'+
+    '1. **환경적**: 지붕 위 태양광으로 전기·냉난방·온수를 얻어 화석 연료 사용과 오염을 줄여요.\n'+
+    '2. **경제적**: 에너지 비용을 아끼고, 발전으로 수익도 얻어요.\n'+
+    '3. **사회적**: 그 수익을 마을 학생들의 **장학금**과 **마을 운영비**로 써서 모두가 함께 발전해요.\n'+
+    '🤔 생각해 보기: 우리 학교 지붕에도 태양광을 설치하면 어떤 점이 좋을까요?',
+  'UN의 17가지 지속 가능한 발전 목표를 알려 줘':
+    '국제 연합(UN)은 **2015년부터 2030년까지** 경제 성장·사회 발전·환경 보전 등에 관한 **17가지 지속 가능한 발전 목표(SDGs)**를 정했어요.\n'+
+    '1. 빈곤 퇴치\n2. 기아 종식\n3. 건강과 웰빙\n4. 양질의 교육\n5. 성평등\n6. 깨끗한 물과 위생\n7. 모두를 위한 깨끗한 에너지\n8. 양질의 일자리와 경제 성장\n9. 산업·혁신·사회 기반 시설\n10. 불평등 감소\n11. 지속 가능한 도시와 공동체\n12. 책임감 있는 소비와 생산\n13. 기후 변화 대응\n14. 해양 생태계 보전\n15. 육상 생태계 보전\n16. 평화·정의·제도\n17. 목표 달성을 위한 파트너십\n'+
+    '🤔 생각해 보기: 17가지 중 내가 학교에서 바로 실천할 수 있는 목표는 무엇일까요?',
+  '생활 속에서 실천할 수 있는 일은?':
+    '지속 가능한 발전을 위해 **개인**도 실천할 수 있어요. 세 영역으로 나누어 볼게요.\n'+
+    '1. **소비 방식**: 과도하게 포장된 제품이나 일회용품 구입 줄이기, 꼭 필요한 물건인지 생각한 후 사기\n'+
+    '2. **먹을거리**: 환경과 건강을 위해 친환경 먹을거리 고르기, 가까운 지역에서 생산된 먹을거리(로컬 푸드) 먹기\n'+
+    '3. **자원과 에너지**: 쓰레기를 줄여 분리 배출하기, 전기·가스 절약하기 (여름철 실내 26℃, 안 쓰는 플러그 뽑기, 에너지 효율 등급 높은 제품, 대중교통·걷기, 겨울철 내복)\n'+
+    '🤔 생각해 보기: 오늘 바로 시작할 수 있는 한 가지는 무엇인가요?',
+  '로컬 푸드가 왜 지속 가능한 발전에 도움이 돼요?':
+    '**로컬 푸드**는 가까운 지역에서 생산된 먹을거리예요.\n'+
+    '1. **환경적**: 운송 거리가 짧아 연료와 포장이 덜 들고, 탄소 배출이 줄어요.\n'+
+    '2. **경제적**: 지역 농가의 소득이 늘어 지역 경제에 도움이 돼요.\n'+
+    '3. **사회적**: 신선하고 건강한 먹을거리를 먹을 수 있어요.\n'+
+    '🤔 생각해 보기: 우리 학교 급식에 쓰이는 재료는 어디에서 왔을까요?',
+  '큐드럼은 어떤 적정 기술이에요?':
+    '**큐드럼(Q Drum)**은 가운데에 구멍이 뚫린 **도넛 모양의 물통**이에요.\n'+
+    '구멍에 줄을 끼워 **굴려서** 끌고 가기 때문에, 먼 곳에서 물을 길어 와야 하는 지역 사람들(특히 어린이와 여성)이 한 번에 많은 물을 쉽게 옮길 수 있어요.\n'+
+    '튼튼한 플라스틱으로 만들어 오래 쓸 수 있고, **사용 방법이 간단**해서 적정 기술의 대표 사례로 꼽혀요.\n'+
+    '🤔 생각해 보기: 큐드럼은 적정 기술의 5가지 조건 중 어떤 조건을 갖추고 있나요?',
+  '몽골 축열기 G-saver는 어떤 효과가 있어요?':
+    '**G-saver(축열기)**는 몽골 전통 가옥(게르) 안의 **구식 난로 위에 부착**해서 쓰는 제품이에요.\n'+
+    '1. 기존 연료의 **열효율을 약 30% 높여요.**\n'+
+    '2. **연료 소모량을 약 40% 줄여요.**\n'+
+    '3. 연료를 덜 태우니 **대기 오염도 줄어요.**\n'+
+    '추운 날씨 속 주민들의 난방비 부담과 환경 문제를 함께 해결한 적정 기술이에요.\n'+
+    '🤔 생각해 보기: 열을 오래 저장하려면 어떤 재료가 좋을까요?',
+  '태양 증류 정수기의 원리는?':
+    '**태양 증류 정수기**는 태양열로 물을 **증발**시켜 깨끗한 물을 얻어요.\n'+
+    '1. 화창한 날 바닷물이나 오염된 물을 붓고 기다려요.\n'+
+    '2. **태양열로 물이 증발**해요. (소금이나 더러운 물질은 남아요)\n'+
+    '3. 증발한 물이 **벽면을 따라 흘러 바닥에 모여요.**\n'+
+    '4. 모인 물을 병에 담아 마셔요.\n'+
+    '지름은 60~80cm이고, 24시간 증류하면 **1리터 이상**의 물을 얻을 수 있어요.\n'+
+    '🤔 생각해 보기: 물을 더 많이 얻으려면 어떤 점을 바꾸면 좋을까요?',
+  '포물선형과 상자형 태양열 조리기의 차이는?':
+    '1. **포물선형**: 둥근 모양으로 햇빛을 모아요. **열을 가장 많이 모을 수 있지만**, 태양의 위치에 따라 **방향을 계속 조절**해야 해요.\n'+
+    '2. **상자형**: **제작이 쉽고** 태양의 어느 방향이든 조리할 수 있어요. 하지만 **많은 양의 조리가 어렵고 열효율이 떨어져요.**\n'+
+    '교과서에서는 **PMI 기법**(장점·단점·흥미로운 점)으로 두 아이디어를 비교해 최적의 아이디어를 골라요.\n'+
+    '🤔 생각해 보기: 우리 모둠은 어떤 형태를 고르고 싶나요? 그 까닭은요?',
+  'PMI 기법이 뭐예요?':
+    '**PMI 기법**은 아이디어를 세 가지 기준으로 따져 보고 **최적의 아이디어를 고르는 수렴적 사고 기법**이에요.\n'+
+    '1. **P (Plus)**: 장점\n2. **M (Minus)**: 단점\n3. **I (Interesting)**: 흥미로운 점\n'+
+    '예) 상자형 태양열 조리기 → P: 제작이 쉬움 / M: 많은 양 조리가 어려움 / I: 작은 크기로 만들 수 있음\n'+
+    '🤔 생각해 보기: 포물선형 조리기의 P, M, I를 직접 적어 볼까요?',
+  '태양열 조리기 온도를 높이려면?':
+    '햇빛을 **많이 모으고**, 모은 열을 **빠져나가지 않게** 하는 것이 핵심이에요.\n'+
+    '1. **반사판**: 알루미늄 테이프를 매끈하게 붙여 햇빛을 안쪽으로 모아요.\n'+
+    '2. **검은색 바닥·용기**: 검은색은 빛을 잘 흡수해 열로 바꿔요.\n'+
+    '3. **투명 덮개**: 투명한 비닐이나 랩으로 덮으면 열이 빠져나가지 않아요.\n'+
+    '4. **단열**: 신문지 등을 벽 사이에 넣어 열이 새지 않게 해요.\n'+
+    '5. **방향과 시간**: 햇빛이 강한 맑은 한낮에, 해를 정면으로 향하게 놓아요.\n'+
+    '⚠️ 칼·글루건은 조심해서 쓰고, 반사된 햇빛을 눈으로 직접 보지 마세요!\n'+
+    '🤔 생각해 보기: 온도계로 어떤 조건을 바꿔 가며 비교해 볼 수 있을까요?',
+  '압전 소자는 어떻게 전기를 만들어요?':
+    '**압전 소자**는 특정한 물질에 **압력을 가하면 전기가 생기는** 성질을 이용해요.\n'+
+    '판에 힘을 주면 양쪽 면에 **힘에 비례하는 양(+)·음(−)의 전하**가 생겨 전기가 만들어져요.\n'+
+    '휴대용 가스레인지, 가스 점화 장치에 쓰이고, 걸을 때 압력으로 전기를 만드는 **에너지 블록**에도 쓰여요. 환경 오염이 적은 것이 장점이에요.\n'+
+    '🤔 생각해 보기: 학교 어디에 압전 소자를 깔면 전기를 많이 만들 수 있을까요?'
+};
+var FAQ_N = {}; Object.keys(FAQ).forEach(function(k){ FAQ_N[norm(k)] = FAQ[k]; });
+
+/* ================== 질문하기 ================== */
+var RE_VIDEO = /영상|동영상|유튜브|비디오|youtube/i;
+var RE_PHOTO = /사진|이미지|그림|보여\s?줘|보여\s?주세요/;
+// "○○ 영상 보여 줘"처럼 영상·사진만 원하는 질문 → AI를 기다리지 않고 바로
+var RE_PURE = /(영상|동영상|유튜브|비디오|사진|이미지)\s*(을|를|좀|도)?\s*(보여|찾아|틀어|검색해|추천해)?\s*(줘|주세요|줄래|봐)?\s*[.!?~ ]*$/;
+var APP = {serverVideos:false};
+
+$('send').onclick = function(){ ask($('q').value); };
+$('q').addEventListener('keydown', function(e){
+  if (e.key==='Enter' && !e.shiftKey && !e.isComposing){ e.preventDefault(); ask($('q').value); }
+});
+$('q').addEventListener('input', function(){ this.style.height='auto'; this.style.height=Math.min(this.scrollHeight,120)+'px'; });
+
+function ask(text){
+  text = String(text||'').trim();
+  if (!text || S.busy) return;
+  if (needStudent()) return;
+  if (S.topic==='custom' && !$('customTopic').value.trim()){ $('customTopic').focus(); $('customTopic').classList.add('warn'); return; }
+  $('customTopic').classList.remove('warn');
+  $('q').value=''; $('q').style.height='auto';
+
+  var t0 = Date.now();
+  var p = base(); p.topic=S.topic; p.custom=$('customTopic').value.trim(); p.question=text;
+  addUser(text);
+  var bot = addBot();
+
+  var wantV = RE_VIDEO.test(text), wantP = RE_PHOTO.test(text) && !wantV;
+  if (wantV) showVideos(bot, p);      // 영상은 바로 (내장 목록)
+  if (wantP) loadPhotos(bot, p);
+
+  var sec = function(){ return ((Date.now()-t0)/1000).toFixed(1); };
+  var faq = FAQ_N[norm(text)];
+  var pure = !faq && (wantV || wantP) && text.length <= 40 && RE_PURE.test(text);
+  if (faq || pure){
+    var ans = faq || (wantV ? '🎬 영상을 바로 찾았어요! 아래에서 재생해 보세요. 작은 그림을 누르면 다른 영상으로 바뀌어요.'
+                           : '📷 사진을 찾고 있어요. 아래 사진을 누르면 원본과 저작권 정보를 볼 수 있어요.');
+    bot.ans.innerHTML = md(ans);
+    var r = {sec:sec(), model: faq ? '교과서 내장 답변' : '영상·사진 바로 찾기'};
+    drawTools(bot, p, r, pure);
+    logQ(p, ans, [], r);
+    scrollEnd();
+    return;
+  }
+
+  S.busy = true; $('send').disabled = true;
+  run('askQuestion', p).then(function(r){
+    r.sec = sec();
+    bot.ans.innerHTML = md(r.answer);
+    drawSources(bot, r.sources||[]);
+    drawTools(bot, p, r);
+    logQ(p, r.answer, r.sources||[], r);
+  }).catch(function(e){
+    bot.ans.innerHTML = '<span class="err">'+errMsg(e)+'</span>';
+    drawTools(bot, p, null);
+    logQ(p, '(오류) '+errMsg(e), [], {sec:sec(), model:'오류'});
+  }).then(function(){
+    S.busy=false; $('send').disabled=false; scrollEnd();
+  });
+}
+// 기록은 답을 보여 준 다음에 따로 (기다리지 않음)
+function logQ(p, answer, sources, r){
+  var d = JSON.parse(JSON.stringify(p)); d.answer=answer; d.sources=sources; d.sec=r.sec; d.model=(r.cached?'저장된 답 · ':'')+(r.model||'');
+  run('logQuestion', d).catch(function(){});
+}
+
+function addUser(t){
+  var d=document.createElement('div'); d.className='msg user'; d.textContent=t;
+  $('chat').appendChild(d); scrollEnd();
+}
+function addBot(){
+  var d=document.createElement('div'); d.className='msg bot';
+  d.innerHTML='<div class="ans"><span class="think">생각하고 있어요 <span class="dots"><span></span><span></span><span></span></span></span></div><div class="src" style="display:none"></div><div class="tools"></div><div class="portal"></div><div class="media mv"></div><div class="media mp"></div>';
+  $('chat').appendChild(d); scrollEnd();
+  return {el:d, ans:d.querySelector('.ans'), src:d.querySelector('.src'), tools:d.querySelector('.tools'), portal:d.querySelector('.portal'), mv:d.querySelector('.mv'), mp:d.querySelector('.mp'), vDone:false, pDone:false};
+}
+function scrollEnd(){ setTimeout(function(){ window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'}); },30); }
+// 입력창 높이를 재서 화면 아래 여백·영상 크기에 반영
+function fitBar(){ var h=$('bar').offsetHeight||120; document.documentElement.style.setProperty('--barH', h+'px'); }
+window.addEventListener('resize', fitBar);
+// 영상이 입력창에 가리지 않게: 영상 상자 전체가 입력창 위에 보이도록 스크롤
+function scrollToSee(el){
+  setTimeout(function(){
+    var r=el.getBoundingClientRect(), barH=$('bar').offsetHeight||120, room=window.innerHeight-barH-12;
+    var y = r.height<=room ? window.scrollY + r.bottom - room : window.scrollY + r.top - 12;
+    window.scrollTo({top:Math.max(0,y), behavior:'smooth'});
+  }, 60);
+}
+
+function drawSources(bot, list){
+  if (!list.length) return;
+  bot.src.style.display='block';
+  bot.src.innerHTML = '<div class="note">📚 찾은 자료</div>' + list.map(function(s){
+    return '<a href="'+attr(s.url)+'" target="_blank" rel="noopener"><span class="t">'+esc(s.type)+'</span>'+esc(s.title)+
+      (s.type==='뉴스' && s.snippet ? ' <small style="color:#5c6f62">· '+esc(s.snippet)+'</small>' : '')+'</a>';
+  }).join('');
+}
+function cleanMediaWords(q){
+  return q.replace(/(영상|동영상|유튜브|비디오|사진|이미지)\s*(을|를|좀|도)?\s*(보여|찾아|틀어|검색해|추천해)?\s*(줘|주세요|줄래|봐)?/g,' ').replace(/\s+/g,' ').trim();
+}
+function drawTools(bot, p, r, pure){
+  bot.tools.innerHTML='';
+  var mk=function(label, fn){ var b=document.createElement('button'); b.className='tb'; b.textContent=label; b.onclick=fn; bot.tools.appendChild(b); return b; };
+  var term = cleanMediaWords(p.question) || p.question;
+  if (pure && term.length>=2) mk('📖 설명도 듣기', function(){ ask(term+'에 대해 설명해 줘'); });
+  mk('▶️ 영상 보기', function(){ if(!bot.vDone) showVideos(bot,p); else scrollToSee(bot.mv); });
+  mk('📷 사진 보기', function(){ if(!bot.pDone) loadPhotos(bot,p); else bot.mp.scrollIntoView({behavior:'smooth',block:'center'}); });
+  mk('🔎 포털 검색', function(){ bot.portal.style.display = bot.portal.style.display==='flex'?'none':'flex'; });
+  var q = encodeURIComponent(term);
+  bot.portal.innerHTML =
+    '<a class="p-naver" target="_blank" href="https://search.naver.com/search.naver?query='+q+'">N 네이버</a>'+
+    '<a class="p-daum" target="_blank" href="https://search.daum.net/search?q='+q+'">D 다음</a>'+
+    '<a class="p-google" target="_blank" href="https://www.google.com/search?q='+q+'">G 구글</a>'+
+    '<a class="p-img" target="_blank" href="https://search.naver.com/search.naver?where=image&query='+q+'">🖼️ 네이버 이미지</a>'+
+    '<a class="p-yt" target="_blank" href="https://www.youtube.com/results?search_query='+q+'">▶ 유튜브</a>';
+  if (r && r.sec){ var t=document.createElement('span'); t.className='time'; t.textContent='⚡ '+r.sec+'초'; bot.tools.appendChild(t); }
+}
+
+/* ---------- 영상: 내장 목록으로 즉시 재생 + (있으면) 선생님 추천·유튜브 API 덧붙이기 ---------- */
+function showVideos(bot, p){
+  bot.vDone = true;
+  var list = localVideos(p);
+  if (list.length) drawVideos(bot, list, p.question);
+  else bot.mv.innerHTML = '<div class="note">▶️ 영상을 찾고 있어요…</div>';
+  if (!APP.serverVideos) {
+    if (!list.length) bot.mv.innerHTML = '<div class="note">알맞은 영상을 찾지 못했어요. 🔎 포털 검색의 유튜브 버튼을 눌러 보세요.</div>';
+    return;
+  }
+  run('findVideos', p).then(function(extra){
+    extra = (extra||[]).filter(function(v){ return !list.some(function(x){ return x.id===v.id; }); });
+    if (!extra.length) { if (!list.length) bot.mv.innerHTML = '<div class="note">알맞은 영상을 찾지 못했어요. 🔎 포털 검색의 유튜브 버튼을 눌러 보세요.</div>'; return; }
+    var teacher = extra.filter(function(v){ return v.from==='선생님 추천'; }), other = extra.filter(function(v){ return v.from!=='선생님 추천'; });
+    var merged = teacher.concat(list, other).slice(0, 8);
+    if (!bot.vUser) drawVideos(bot, merged, p.question);   // 학생이 아직 다른 영상을 고르지 않았으면 선생님 추천을 맨 앞에
+  }).catch(function(){});
+}
+function drawVideos(bot, list, question){
+  var html = '<div class="vbox"><div class="player"><iframe allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>'+
+    '<div class="vinfo"><span class="vt"></span><a class="vl" target="_blank">유튜브에서 보기 ↗</a></div>';
+  html += '<div class="thumbs"'+(list.length>1?'':' style="display:none"')+'>'+list.map(function(v,i){
+    return '<button data-i="'+i+'"><img src="https://i.ytimg.com/vi/'+attr(v.id)+'/mqdefault.jpg" alt=""><span>'+esc(v.title)+'</span></button>';
+  }).join('')+'</div>';
+  html += '</div><a class="more" target="_blank" href="https://www.youtube.com/results?search_query='+encodeURIComponent(cleanMediaWords(question)||question)+'">🔍 유튜브에서 더 찾아보기</a>';
+  bot.mv.innerHTML = html;
+  var frame=bot.mv.querySelector('iframe'), cur=-1, bad={};
+  var btns = bot.mv.querySelectorAll('.thumbs button');
+  var play=function(i){
+    cur=i; var v=list[i];
+    frame.src='https://www.youtube-nocookie.com/embed/'+v.id+'?rel=0&modestbranding=1&playsinline=1';
+    bot.mv.querySelector('.vt').textContent = v.title + (v.ch?' · '+v.ch:'') + (v.from?' ('+v.from+')':'');
+    bot.mv.querySelector('.vl').href='https://www.youtube.com/watch?v='+v.id;
+    [].forEach.call(btns, function(b){ b.classList.toggle('on', +b.dataset.i===i); });
+  };
+  // 지워진 영상(썸네일이 120px 기본 그림)은 빼고, 지금 재생 중이면 다음 영상으로
+  [].forEach.call(btns, function(b){
+    var i=+b.dataset.i, img=b.querySelector('img');
+    var drop=function(){ bad[i]=1; b.style.display='none';
+      if (cur===i){ for (var k=1;k<list.length;k++){ var n=(i+k)%list.length; if(!bad[n]){ play(n); break; } } } };
+    img.onload=function(){ if (img.naturalWidth<=120) drop(); };
+    img.onerror=drop;
+    b.onclick=function(){ bot.vUser=true; play(i); };
+  });
+  play(0);
+  scrollToSee(bot.mv);
+}
+
+/* ---------- 사진 ---------- */
+function loadPhotos(bot, p){
+  bot.pDone = true;
+  bot.mp.innerHTML = '<div class="note">📷 사진을 찾고 있어요…</div>';
+  run('findPhotos', p).then(function(list){
+    if (!list || !list.length){ bot.mp.innerHTML='<div class="note">위키미디어에서 사진을 찾지 못했어요. 🔎 포털 검색의 네이버 이미지를 눌러 보세요.</div>'; return; }
+    bot.mp.innerHTML = '<div class="note">📷 위키미디어 공용 사진 (누르면 원본·저작권 정보)</div><div class="photos">'+list.map(function(ph){
+      return '<a class="photo" target="_blank" href="'+attr(ph.page)+'"><img loading="lazy" src="'+attr(ph.thumb)+'" alt="'+attr(ph.title)+'" onerror="this.parentNode.style.display=\'none\'"><div>'+esc(ph.title.slice(0,40))+'<br><small>'+esc(ph.author)+(ph.license?' · '+esc(ph.license):'')+'</small></div></a>';
+    }).join('')+'</div>';
+    scrollEnd();
+  }).catch(function(e){ bot.mp.innerHTML='<div class="note err">사진 찾기 오류: '+esc(errMsg(e))+'</div>'; });
+}
+
+/* ================== 예상 문제 ================== */
+function shuffle(a){ a=a.slice(); for (var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+function allItems(){   // 전체 예상 문제: 모든 영역의 문제를 영역 순서대로
+  var out=[];
+  Object.keys(QUIZ).forEach(function(k){ QUIZ[k].items.forEach(function(it){ var c=Object.create(it); c.area=k; out.push(c); }); });
+  return out;
+}
+function openQuiz(area){ S.qset = area; S.topic = 'quiz'; drawTabs(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+function drawQuiz(){
+  $('qtabs').innerHTML='';
+  ['all'].concat(Object.keys(QUIZ)).forEach(function(k){
+    var b=document.createElement('button'); b.className='qtab'+(S.qset===k?' on':'');
+    b.textContent = (k==='all' ? '📚 전체 예상 문제' : QUIZ[k].name)+' ('+quizCount(k)+')';
+    b.onclick=function(){ S.qset=k; drawQuiz(); }; $('qtabs').appendChild(b);
+  });
+  S.items = S.qset==='all' ? allItems() : QUIZ[S.qset].items;
+  var nOx = S.items.filter(function(it){return it.t==='ox';}).length, nMc = S.items.length-nOx;
+  $('qdesc').textContent = (S.qset==='all' ? '5개 영역의 모든 문제예요. ' : '')+'⭕❌ O·X '+nOx+'문제 + 5지선다 '+nMc+'문제 · 다 풀고 [채점하기]를 누르세요.';
+  $('qscore').style.display='none'; $('qretry').style.display='none';
+  $('qgrade').style.display='inline-block'; $('qgrade').disabled=false;
+  S.graded=false;
+  var last='', lastArea='';
+  $('qlist').innerHTML = S.items.map(function(it,i){
+    var h='';
+    if (it.area && it.area!==lastArea){ h+='<div class="qarea">'+QUIZ[it.area].name+'</div>'; lastArea=it.area; last=''; }
+    if (it.t!==last){ h+='<div class="qsec">'+(it.t==='ox'?'⭕❌ O·X 문제':'🔢 5지선다 문제')+'</div>'; last=it.t; }
+    h+='<div class="q" data-i="'+i+'"><div class="qt"><span class="no">'+(i+1)+'</span>'+it.q+'</div>';
+    if (it.box) h+='<div class="box">'+esc(it.box).replace(/\n/g,'<br>')+'</div>';
+    if (it.t==='ox') h+='<div class="ox"><button data-v="O">⭕</button><button data-v="X">❌</button></div>';
+    else h+='<div class="opts">'+it.o.map(function(o,j){ return '<label><input type="radio" name="mc'+i+'" value="'+j+'"><span><b>'+'①②③④⑤'[j]+'</b> '+esc(o)+'</span></label>'; }).join('')+'</div>';
+    return h+'<div class="exp"></div></div>';
+  }).join('');
+  [].forEach.call($('qlist').querySelectorAll('.ox button'), function(b){
+    b.onclick=function(){ if(S.graded) return; [].forEach.call(b.parentNode.children,function(x){x.classList.remove('sel');}); b.classList.add('sel'); };
+  });
+  [].forEach.call($('qlist').querySelectorAll('.opts input'), function(r){
+    r.onchange=function(){ [].forEach.call(r.closest('.opts').children,function(l){l.classList.toggle('sel', l.querySelector('input').checked);}); };
+  });
+}
+
+$('qgrade').onclick = function(){
+  if (needStudent()) return;
+  var items=S.items, score=0, wrong=[], blank=0;
+  var qs=$('qlist').querySelectorAll('.q');
+  [].forEach.call(qs, function(b){ if (!b.querySelector('.ox .sel') && !b.querySelector('input:checked')) blank++; });
+  if (blank && !confirm('아직 풀지 않은 문제가 '+blank+'개 있어요. 그래도 채점할까요?')) return;
+  items.forEach(function(it,i){
+    var box=qs[i], ok=false;
+    if (it.t==='ox'){ var s=box.querySelector('.ox .sel'); ok = !!s && s.dataset.v===it.a; }
+    else { var c=box.querySelector('input:checked'); ok = !!c && +c.value===it.a;
+      [].forEach.call(box.querySelectorAll('.opts label'), function(l,j){ if (j===it.a) l.classList.add('right'); }); }
+    if (ok) score++; else wrong.push(i+1);
+    var right = it.t==='ox' ? (it.a==='O'?'⭕':'❌') : '①②③④⑤'[it.a];
+    var exp=box.querySelector('.exp');
+    exp.className='exp '+(ok?'ok':'no');
+    exp.innerHTML=(ok?'✅ 정답! ':'❌ 아쉬워요. 정답: '+right+' · ')+esc(it.e);
+  });
+  S.graded=true;
+  var total=items.length, pct=Math.round(score/total*100);
+  $('qscore').style.display='block';
+  var byArea='';
+  if (S.qset==='all'){ var st={}; items.forEach(function(it,i){ st[it.area]=st[it.area]||[0,0]; st[it.area][1]++; if (wrong.indexOf(i+1)<0) st[it.area][0]++; });
+    byArea='<div class="areas">'+Object.keys(st).map(function(k){ return '<span>'+QUIZ[k].name+' <b>'+st[k][0]+'/'+st[k][1]+'</b></span>'; }).join('')+'</div>'; }
+  $('qscore').innerHTML = (pct>=90?'🏆':pct>=70?'👍':'💪')+' '+score+' / '+total+' ('+pct+'점)'+byArea+(wrong.length?'<div class="note">틀린 문제: '+wrong.join(', ')+'번 — 해설을 읽고 다시 풀어 보세요.</div>':'<div class="note">모두 맞혔어요! 멋져요 🎉</div>');
+  $('qgrade').style.display='none'; $('qretry').style.display='inline-block';
+  $('qscore').scrollIntoView({behavior:'smooth',block:'center'});
+  var p=base(); p.set = S.qset==='all' ? '전체 예상 문제' : QUIZ[S.qset].name.replace(/^\S+\s/,'');
+  p.score=score; p.total=total; p.wrong=wrong.join(', ');
+  run('saveQuiz', p).catch(function(){});
+};
+$('qretry').onclick = function(){ drawQuiz(); window.scrollTo({top:0,behavior:'smooth'}); };
+/* ================== 도우미 ================== */
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function attr(s){ return esc(s); }
+function norm(s){ return String(s||'').toLowerCase().replace(/[\s().·\-]/g,''); }
+function md(s){
+  var lines = esc(s).split('\n'), out=[], list=null;
+  var close=function(){ if(list){ out.push('</'+list+'>'); list=null; } };
+  lines.forEach(function(l){
+    var n = l.match(/^\s*(\d+)[.)]\s+(.*)/), b = l.match(/^\s*[-•*]\s+(.*)/);
+    if (n){ if(list!=='ol'){ close(); out.push('<ol start="'+n[1]+'">'); list='ol'; } out.push('<li>'+n[2]+'</li>'); }
+    else if (b){ if(list!=='ul'){ close(); out.push('<ul>'); list='ul'; } out.push('<li>'+b[1]+'</li>'); }
+    else { close(); if (l.trim()) out.push('<div>'+l+'</div>'); }
+  });
+  close();
+  return out.join('').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+}
+function errMsg(e){
+  var m = String((e && e.message) || e || '');
+  if (/KEY/.test(m)) return '🔑 AI 키에 문제가 있어요. 선생님께 알려 주세요.';
+  if (/BUSY/.test(m)) return '🙋 지금 친구들이 많이 질문하고 있어요. 10초 뒤에 다시 해 주세요.';
+  if (/SHORT/.test(m)) return '조금 더 자세히 써 볼까요?';
+  if (/EMPTY/.test(m)) return '질문을 입력해 주세요.';
+  return '앗, 오류가 났어요. 잠시 후 다시 해 주세요. ('+m.slice(0,80)+')';
+}
+
+/* ================== 시작 ================== */
+loadStudent();
+drawTabs();
+fitBar();
+loadBg();
+loadBg2();
+run('getAppInfo').then(function(i){ if(i){ APP.serverVideos=!!i.serverVideos; if(i.version){ $('ver').textContent='· '+i.version; $('ver0').textContent=i.version; } } }).catch(function(){});
+</script>
+</body>
+</html>
