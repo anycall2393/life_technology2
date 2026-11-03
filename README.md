@@ -1,0 +1,2 @@
+# life_technology2
+적정기술과 지속가능한 발전
